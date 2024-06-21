@@ -35,6 +35,9 @@ class TaskDb:
              self.filename = filename
 
         def load_tasks(self):
+            '''Load tasks from a pickle file,
+             handling missing 'status' keys with a default
+            ,or return an empty list if file not found.'''
             try:
                 with open(self.filename, 'rb') as file:
                    tasks_data = pickle.load(file)
@@ -46,6 +49,7 @@ class TaskDb:
              return []
 
         def save_tasks(self, tasks):
+             '''Save all tasks to a pickle file'''
              with open(self.filename, 'wb') as file:
                 pickle.dump([task.to_dict() for task in tasks], file)
 
@@ -56,11 +60,13 @@ class TaskManager:
             self.task_id_counter = max((task.taskID for task in self.todo_list), default=0) + 1
 
         def get_current_time(self):
+            '''Get the current time as a form : HH:MM:SS'''
             now = datetime.now()
             current_time = now.strftime("%H:%M:%S")
             return current_time
 
         def add_task(self,task_name,priority):
+            '''Add a task to the to-do list'''
             new_task = TaskEntry(self.task_id_counter,task_name,priority)
             self.todo_list.append(new_task)
             self.tasksDB.save_tasks(self.todo_list)
@@ -68,6 +74,7 @@ class TaskManager:
             self.task_id_counter+=1
 
         def delete_task(self, taskID):
+            '''Delete a task from the to-do list by ID'''
             found = False
             for task in self.todo_list:
                 if taskID == task.taskID:
@@ -78,14 +85,15 @@ class TaskManager:
 
             if not found:
                 print(f"Task with ID {taskID} not found.")
-
             self.tasksDB.save_tasks(self.todo_list)
 
         def sortTasksByPriority(self):
+            '''Sort tasks in the to-do list by priority'''
             priority_dict = {"High": 3, "Medium": 2, "Low": 1}
             self.todo_list = sorted(self.todo_list, key=lambda task: priority_dict.get(task.priority, 0), reverse=True)
 
         def modify_taskName(self,taskID, newTaskName):
+            '''Modify the name of a task identified by taskID'''
             for task in self.todo_list:
                 if taskID == task.taskID:
                     task.task_name = newTaskName
@@ -96,6 +104,7 @@ class TaskManager:
                 print(f"task with id: {taskID} was not found")
 
         def printToDoList(self):
+            '''Print the to-do list'''
             if not self.todo_list:
                 print("There are no tasks in the list..")
             else:
@@ -104,6 +113,7 @@ class TaskManager:
                    print(f"Task ID: {task.taskID}, Task Name: {task.task_name}, priority: {task.priority} ,status: {task.status}")
 
         def modify_task_status(self,taskID,wantedStatus):
+                '''Modify the status of a task identified by taskID'''
                 exist = False
                 for task in self.todo_list:
                     if task.taskID == taskID:
@@ -117,6 +127,7 @@ class TaskManager:
 
 
         def show_status(self):
+            '''Show the status of all tasks'''
             for task in self.todo_list:
                  print(f"Task name: {task.task_name}, status: {task.status}")
 
@@ -133,35 +144,45 @@ class ToDoList:
              parser.add_argument('--show_statuses', help = 'show statuses of all the tasks')
              parser.add_argument('--delete_task', help = 'Delete task by given id')
 
+             #Parse the arguments from command line
              args = parser.parse_args()
+
+             #Create Task manager instance
              task_manager = TaskManager()
 
+             #Process different commands based on the provided arguments
              if args.command == 'add':
+                 # Check if task name and priority are provided,then add the task
                  if args.task and args.priority:
                      task_manager.add_task(args.task, args.priority)
                  else:
                      print("For adding task to ToDo list task name and priority are reqired")
 
              elif args.command == 'modify_name':
+                 #Check if task id and new task name are provided,then modify task's name
                  if args.taskID and args.new_name:
                      task_manager.modify_taskName(args.taskID, args.new_name)
                  else:
                      print("Modifing task name reqired task name and task ID")
 
              elif args.command == 'modify_status':
+                 # Check if task id and status are provided,then modify task's status
                  if args.taskID and args.status:
                      task_manager.modify_task_status(args.taskID, args.status)
                  else:
                      print("Updating task reqired task ID and wanted status")
 
              elif args.command == 'delete_task':
+                 #Check if task id is provided,then delete the task
                  if args.taskID:
                      task_manager.delete_task(args.taskID)
 
              elif args.command == 'show_list':
+                 #Call print to-do list method
                  task_manager.printToDoList()
 
              elif args.command == 'show_statuses':
+                 #Call show statuses method
                  task_manager.show_status()
              else:
                  parser.print_help()
